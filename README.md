@@ -126,6 +126,24 @@ start@src/main.ts:4:3
 
 This symbolize example exits with code 1 because the matching frame at 3:1 has no source mapping. The vendor frame is for another file and remains unchanged.
 
+V8 marks asynchronous and constructor calls with `async ` and `new ` before the function name. `symbolize` keeps these markers and replaces only the name after them. For a trace file `async.txt`:
+
+```text
+    at async a (https://example.com/static/app.min.js:1:16)
+    at async new s (https://example.com/static/app.min.js:2:23)
+    at new Object (https://example.com/static/vendor.js:10:5)
+```
+
+`srcwhere symbolize app.js.map async.txt` prints (exit code 0):
+
+```text
+    at async a (src/util.ts:2:3)
+    at async new clamp (src/main.ts:4:10)
+    at new Object (https://example.com/static/vendor.js:10:5)
+```
+
+(The first frame has no name in the map, so its function text stays `async a`; the second frame is replaced by `clamp` after its two markers; the vendor frame belongs to another file.)
+
 ## Exit codes
 
 - `0`: the command completed successfully.
