@@ -27,7 +27,17 @@ def remap_trace(sm: SourceMap, text: str, name: str) -> tuple[str, int]:
 
         func = frame.func
         if func and segment.name is not None:
-            func = sm.names[segment.name]
+            mapped_name = sm.names[segment.name]
+            if frame.kind == "v8":
+                prefix = ""
+                remainder = func
+                for marker in ("async ", "new "):
+                    if remainder.startswith(marker) and len(remainder) > len(marker):
+                        prefix += marker
+                        remainder = remainder[len(marker) :]
+                func = prefix + mapped_name
+            else:
+                func = mapped_name
 
         remapped = Frame(
             kind=frame.kind,
