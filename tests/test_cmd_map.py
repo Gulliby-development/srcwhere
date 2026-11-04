@@ -60,10 +60,10 @@ def test_command_metadata_and_run_signatures() -> None:
     )
     assert cmd_decode.SPECS == [Spec("--line", numeric=True, lo=1, hi=1000000)]
     assert (cmd_stats.USAGE, cmd_stats.ARGS, cmd_stats.MAX, cmd_stats.SPECS) == (
-        "       srcwhere stats MAP",
+        "       srcwhere stats MAP [--min N]",
         ["MAP"],
         1,
-        [],
+        [Spec("--min", numeric=True, lo=1, hi=1000000)],
     )
 
     for function in (cmd_check.run_check, cmd_decode.run_decode, cmd_stats.run_stats):
@@ -304,6 +304,67 @@ def test_stats_preserves_duplicate_and_unused_sources_and_empty_map_counts() -> 
     assert empty_io.file_reads == ["empty.json"]
     assert empty_io.stdin_reads == 0
     assert_no_writes(empty_io)
+
+
+MIN_MAP = (
+    b'{"version":3,"sources":["a","b","c"],"names":[],"mappings":"AAAA,CAAC,CAAC;ACAA,CAAC;ACAA"}'
+)
+
+
+def stats_min_output(minimum: int | None) -> str:
+    io = MemoryIO(files={"map.json": MIN_MAP})
+    options = {} if minimum is None else {"--min": minimum}
+    output, status = cmd_stats.run_stats(["map.json"], options, io)
+    assert status == 0
+    return output
+
+
+def source_lines(output: str) -> list[str]:
+    return [text for text in output.splitlines() if text.startswith("source ")]
+
+
+def test_stats_min_keeps_only_sources_with_enough_segments() -> None:
+    assert source_lines(stats_min_output(None)) == [
+        'source      "a" 3',
+        'source      "b" 2',
+        'source      "c" 1',
+    ]
+    assert source_lines(stats_min_output(1)) == source_lines(stats_min_output(None))
+    assert source_lines(stats_min_output(2)) == ['source      "a" 3', 'source      "b" 2']
+    assert source_lines(stats_min_output(3)) == ['source      "a" 3']
+    assert source_lines(stats_min_output(4)) == []
+
+
+def test_stats_min_leaves_the_totals_unchanged() -> None:
+    full = stats_min_output(None)
+    cut = stats_min_output(3)
+    head = [text for text in full.splitlines() if not text.startswith("source ")]
+    assert [text for text in cut.splitlines() if not text.startswith("source ")] == head
+    assert head[0] == "lines       3"
+    assert head[1] == "segments    6"
+    assert head[3] == "sources     3"
+
+
+def test_stats_min_applies_after_the_unused_sources_are_counted() -> None:
+    io = MemoryIO(files={"map.json": b'{"version":3,"sources":["a","unused"],"mappings":"AAAA"}'})
+    output, status = cmd_stats.run_stats(["map.json"], {"--min": 1}, io)
+    assert status == 0
+    assert source_lines(output) == ['source      "a" 1']
+    assert "sources     2" in output.splitlines()
+    assert "used        1" in output.splitlines()
+
+
+@pytest.mark.parametrize("value", ["0", "1000001", "x", "-1", "1.5"])
+def test_stats_min_rejects_values_out_of_range(value: str) -> None:
+    with pytest.raises(Fail):
+        parse_options(["map.json", "--min", value], cmd_stats.SPECS)
+
+
+@pytest.mark.parametrize("value", ["1", "1000000"])
+def test_stats_min_accepts_the_endpoints(value: str) -> None:
+    options, arguments = parse_options(["map.json", "--min", value], cmd_stats.SPECS)
+    assert options == {"--min": int(value)}
+    assert arguments == ["map.json"]
 
 
 def test_decode_and_stats_render_nonprintable_source_and_name_text_safely() -> None:

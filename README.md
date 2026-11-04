@@ -64,7 +64,7 @@ usage: srcwhere check MAP
        srcwhere lookup MAP LINE:COL
        srcwhere reverse MAP SOURCE LINE:COL
        srcwhere symbolize MAP TRACE [--file NAME]
-       srcwhere stats MAP
+       srcwhere stats MAP [--min N]
        srcwhere vlq-encode NUMBER...
        srcwhere vlq-decode TEXT
 ```
@@ -74,7 +74,7 @@ usage: srcwhere check MAP
 - `srcwhere lookup MAP LINE:COL` reports the original source position for a generated position, when mapped.
 - `srcwhere reverse MAP SOURCE LINE:COL` finds generated positions for a source position.
 - `srcwhere symbolize MAP TRACE [--file NAME]` rewrites matching stack frames. `--file NAME` selects the bundle filename; otherwise the map's `file` name is used.
-- `srcwhere stats MAP` prints map totals and segment counts for each source.
+- `srcwhere stats MAP [--min N]` prints map totals and segment counts for each source; with `--min N` only the sources with at least N segments get a `source` line (N from 1 through 1,000,000).
 - `srcwhere vlq-encode NUMBER...` encodes one to twenty signed VLQ numbers.
 - `srcwhere vlq-decode TEXT` decodes a VLQ stream.
 
@@ -108,6 +108,26 @@ original    4:10
 name        "clamp"
 text        "  return clamp(-5);"
 ```
+
+Count the segments of each source, and keep only the sources with at least 4 of them:
+
+```text
+srcwhere stats app.js.map --min 4
+```
+
+```text
+lines       3
+segments    8
+mapped      7
+sources     2
+used        2
+names       2
+named       3
+content     2
+source      "src/main.ts" 4
+```
+
+The totals do not change with `--min`; a source with no segment is also left out. A `--min` larger than every count leaves no `source` line.
 
 Symbolize the example trace:
 

@@ -105,7 +105,7 @@ def test_singleton_help_is_exact_and_does_not_read_inputs() -> None:
             "       srcwhere lookup MAP LINE:COL\n"
             "       srcwhere reverse MAP SOURCE LINE:COL\n"
             "       srcwhere symbolize MAP TRACE [--file NAME]\n"
-            "       srcwhere stats MAP\n"
+            "       srcwhere stats MAP [--min N]\n"
             "       srcwhere vlq-encode NUMBER...\n"
             "       srcwhere vlq-decode TEXT\n"
         )

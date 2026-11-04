@@ -115,7 +115,7 @@ def test_help_output_has_the_exact_eight_lines() -> None:
         "       srcwhere lookup MAP LINE:COL\n"
         "       srcwhere reverse MAP SOURCE LINE:COL\n"
         "       srcwhere symbolize MAP TRACE [--file NAME]\n"
-        "       srcwhere stats MAP\n"
+        "       srcwhere stats MAP [--min N]\n"
         "       srcwhere vlq-encode NUMBER...\n"
         "       srcwhere vlq-decode TEXT"
     )
@@ -130,7 +130,7 @@ def test_all_eight_commands_are_documented() -> None:
         "srcwhere lookup MAP LINE:COL",
         "srcwhere reverse MAP SOURCE LINE:COL",
         "srcwhere symbolize MAP TRACE [--file NAME]",
-        "srcwhere stats MAP",
+        "srcwhere stats MAP [--min N]",
         "srcwhere vlq-encode NUMBER...",
         "srcwhere vlq-decode TEXT",
     ]
