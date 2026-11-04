@@ -4,21 +4,24 @@ from srcwhere.base.text import line, show
 from srcwhere.query.stats import compute_stats
 from srcwhere.smap.loader import load_map
 
-USAGE = "       srcwhere stats MAP"
+USAGE = "       srcwhere stats MAP [--min N]"
 ARGS = ["MAP"]
 MAX = 1
-SPECS: list[Spec] = []
+SPECS: list[Spec] = [Spec("--min", numeric=True, lo=1, hi=1000000)]
 
 
 def run_stats(args: list[str], options: dict, io: IO) -> tuple[str, int]:
     """Render aggregate and per-source statistics for a source map."""
     source_map = load_map(io, args[0])
     stats = compute_stats(source_map)
+    minimum = options.get("--min")
 
     output = ""
     for label in ("lines", "segments", "mapped", "sources", "used", "names", "named", "content"):
         output += line(label, str(getattr(stats, label)))
     for name, count in zip(source_map.sources, stats.per_source):
+        if minimum is not None and count < minimum:
+            continue
         output += line("source", f"{show(name)} {count}")
 
     return output, 0
